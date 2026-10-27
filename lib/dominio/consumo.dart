@@ -7,18 +7,9 @@ class Consumo {
   final double litros;
 }
 
-String? validarLitros(double? litros) { ... }   // mensaje de error o null
-
-// lib/datos/consumo_repository.dart
-
-
-// lib/datos/memoria_consumo_repository.dart
-
-// lib/presentacion/consumos_view_model.dart
-
-
-// lib/presentacion/vistas.dart — widgets tontos
-
-// lib/variantes/a_change_notifier.dart
-
-// lib/variantes/b_provider.dart
+String? validarLitros(double? litros) {
+  if (litros == null) return 'Escribe los litros con número';
+  if (litros <= 0) return 'Los litros deben ser mayores que cero';
+  if (litros > 10000) return 'Los litros superan el tope de 10000';
+  return null;
+}
