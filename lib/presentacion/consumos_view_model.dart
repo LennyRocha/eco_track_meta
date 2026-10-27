@@ -1,17 +1,59 @@
+import 'package:flutter/foundation.dart';
+
+import '../datos/consumo_repository.dart';
+import '../dominio/consumo.dart';
+import '../dominio/meta.dart';
+
 class ConsumosViewModel extends ChangeNotifier {
-  ConsumosViewModel(ConsumoRepository repositorio);
+  ConsumosViewModel(this._repositorio);
 
-  List<Consumo> consumos;    // empieza vacía
-  String? error;             // empieza en null
-  bool guardando;            // empieza en false
-  double meta;               // empieza en metaInicial
+  final ConsumoRepository _repositorio;
 
-  double get total;          // derivados: getters, NO campos
-  double get avance;
-  bool get metaSuperada;
+  List<Consumo> consumos = [];
+  String? error;
+  bool guardando = false;
+  double meta = metaInicial;
 
-  Future<void> cargar() { ... }
-  Future<bool> guardar(String laboratorio, String litrosTexto) { ... }  // true si se guardó
-  void subirMeta() { ... }
-  void bajarMeta() { ... }
+  double get total => consumos.fold(0.0, (suma, consumo) => suma + consumo.litros);
+  double get avance => avanceDeMeta(total: total, meta: meta);
+  bool get metaSuperada => total > meta;
+
+  Future<void> cargar() async {
+    consumos = await _repositorio.todos();
+    notifyListeners();
+  }
+
+  Future<bool> guardar(String laboratorio, String litrosTexto) async {
+    final litros = double.tryParse(litrosTexto.trim().replaceAll(',', '.'));
+    error = validarLitros(litros);
+
+    if (error != null) {
+      notifyListeners();
+      return false;
+    }
+
+    guardando = true;
+    notifyListeners();
+
+    try {
+      await _repositorio.guardar(
+        Consumo(laboratorio: laboratorio, litros: litros!),
+      );
+      consumos = await _repositorio.todos();
+      return true;
+    } finally {
+      guardando = false;
+      notifyListeners();
+    }
+  }
+
+  void subirMeta() {
+    meta = ajustarMeta(meta, pasoMeta);
+    notifyListeners();
+  }
+
+  void bajarMeta() {
+    meta = ajustarMeta(meta, -pasoMeta);
+    notifyListeners();
+  }
 }
